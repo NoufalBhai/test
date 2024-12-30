@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  StepFunctionWorkflow:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state_machine/definition.json
+      Role: !GetAtt StepFunctionRole.Arn
+
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
+  StepFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StepFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !GetAtt LambdaFunction.Arn
+
+Outputs:
+  StepFunctionWorkflowArn:
+    Description: ARN of the Step Function Workflow
+    Value: !Ref StepFunctionWorkflow
