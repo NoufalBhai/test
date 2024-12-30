@@ -1,0 +1,27 @@
+{
+  "StartAt": "ProcessItems",
+  "States": {
+    "ProcessItems": {
+      "Type": "Map",
+      "ItemsPath": "$.items",
+      "MaxConcurrency": 20,
+      "Iterator": {
+        "StartAt": "InvokeLambda",
+        "States": {
+          "InvokeLambda": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "YOUR_LAMBDA_FUNCTION_NAME",  // Replace with your Lambda function name
+              "Payload": {
+                "item.$": "$"  // Pass the current item from the Map state
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}
