@@ -1,0 +1,52 @@
+name: Package and Deploy Lambda Functions
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  package-lambda:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt  # Ensure dependencies are included if needed
+
+      - name: Create ZIP packages for each function
+        run: |
+          mkdir -p packaged
+          for function in src/functions/*; do
+            if [ -d "$function" ]; then
+              func_name=$(basename "$function")
+              mkdir -p "packaged/$func_name"
+              
+              # Copy function contents (not the folder itself)
+              cp -r "$function/"* packaged/$func_name/
+              
+              # Copy utils folder
+              cp -r src/utils packaged/$func_name/
+              
+              # Zip the contents (not the folder)
+              cd packaged/$func_name
+              zip -r "../${func_name}.zip" .  # Zip everything inside, not the folder itself
+              cd ../../
+            fi
+          done
+
+      - name: Upload ZIPs as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-packages
+          path: packaged/*.zip
