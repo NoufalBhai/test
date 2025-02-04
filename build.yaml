@@ -50,3 +50,12 @@ jobs:
         with:
           name: lambda-packages
           path: packaged/*.zip
+
+      - name: Upload each function ZIP separately
+        uses: actions/upload-artifact@v4
+        for function in packaged/*.zip; do
+          artifact_name=$(basename $function .zip)
+          with:
+            name: "${artifact_name}"
+            path: "$function"
+        done
