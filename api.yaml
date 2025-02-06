@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: MySecureAPI
+      StageName: Prod
+      Auth:
+        ApiKeyRequired: true
+      GatewayResponses:
+        Unauthorized:
+          StatusCode: 401
+          ResponseTemplates:
+            application/json: '{"message": "Unauthorized"}'
+
+  MyApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: MyApiKey
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref MyApi
+          StageName: Prod
+
+  MyUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: MyUsagePlan
+      ApiStages:
+        - ApiId: !Ref MyApi
+          Stage: Prod
+      Throttle:
+        RateLimit: 10
+        BurstLimit: 2
+      Quota:
+        Limit: 1000
+        Period: MONTH
+      ApiKeyId: !Ref MyApiKey
+
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      CodeUri: ./src
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /hello
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello"
+  
+  ApiKeyId:
+    Description: "API Key ID for accessing the API"
+    Value: !Ref MyApiKey
