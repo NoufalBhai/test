@@ -47,6 +47,8 @@ components:
       properties:
         name:
           type: string
+          minLength: 5
+          pattern: "^[A-Za-z]+$"
         age:
           type: integer
         isActive:
